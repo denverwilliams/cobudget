@@ -1,0 +1,55 @@
+version: '2'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      
+  cobudget-postgres:
+    image: postgres:latest
+    container_name: cobudget-postgres
+    environment:
+      - POSTGRES_USER=secret
+      - POSTGRES_PASSWORD=secret
+    volumes:
+      - ./volumes/db:/var/lib/postgresql/data
+
+  cobudget-api:
+    image: docker.ii.org.nz/cobudget/cobudget-api:master
+    container_name: cobudget-api
+    links:
+      - cobudget-postgres:db
+    environment:
+      - RACK_ENV=test
+      - RAILS_ENV=test
+      - TEST_DB_NAME=cobudget_test
+      - DB_USERNAME=secret
+      - DB_PASSWORD=secret
+      - DB_PORT_5432_TCP_ADDR=db
+      - VIRTUAL_HOST=api.ii.org.nz
+      - VIRTUAL_PORT=3000
+      - CANONICAL_HOST=cobudget.ii.org.nz
+      - SMTP_SERVER=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=smtp@hippiehacker.org
+      - SMTP_PASSWORD=secret
+      - SMTP_DOMAIN=gmail.com
+      - ACCOUNTS_ENV=iiCobudget <cobudget@ii.org.nz>
+      - UPDATES_ENV=iiCobudget Updates <cobudget@ii.org.nz>
+        
+  cobudget-ui:
+    image: docker.ii.org.nz/cobudget/cobudget-ui:master
+    container_name: cobudget-ui
+    environment:
+      - PORT=8080
+      - NODE_ENV=production
+      - VIRTUAL_PORT=8080
+      - VIRTUAL_HOST=cobudget.ii.org.nz
+      - NPM_ENV=production
+      - API_PROTO=http
+      - API_HOST=api.ii.org.nz
+      - API_PORT=80 
